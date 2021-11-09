@@ -1,0 +1,89 @@
+version: '3.3'
+
+services:
+
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.3
+    container_name: elastic
+    environment:
+      discovery.type: single-node
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      #- ./configs/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - /data/elastic:/usr/share/elasticsearch/data
+    networks:
+      - backend
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.3.2
+    container_name: kibana
+    depends_on:
+      - elastic
+    environment:
+      ELASTICSEARCH_URL: http://elastic:9200
+    links:
+      - elastic
+    ports:
+      - 5601:5601
+    networks:
+      - backend
+
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - 6379:6379
+    networks:
+      - backend
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      POSTGRES_PASSWORD: passw0rd
+      PG_PASSWORD: passw0rd
+    volumes:
+      - /data/postgresql:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+
+  rabbit:
+    image: rabbitmq:3-management
+    container_name: rabbit
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - 5672:5672
+      - 5671:5671
+      - 4369:4369
+      - 25672:25672
+      - 15672:15672 # web interface
+    volumes:
+      - /data/rabbit:/var/lib/rabbitmq/mnesia
+    networks:
+      - backend
+
+  mongo:
+   image: mongo
+   container_name: mongo
+   ports:
+      - 27017:27017
+   environment:
+      - MONGO_INITDB_DATABASE=test
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+   volumes:
+      - /data/mongo:/data/db
+      #- mongoconfig:/data/configdb
+   networks:
+      - backend
+
+networks:
+  backend:
+    external:
+      name: backend
